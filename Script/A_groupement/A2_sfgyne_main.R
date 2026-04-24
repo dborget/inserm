@@ -10,6 +10,10 @@ library(writexl) # exporter fichier excel
 library(tidyr) # organiser un dataframe
 library(stringr) # travailler le texte
 library(xlsx) # exporter datagrame dans excel
+library(leaflet) # affichage de la carto
+library(tidygeocoder) # fonction geocode, récuperer les coordonnées géo
+library(htmlwidgets) #sauveegarder en html
+library(sf) # charger fond de carte
 
 ##0.2 Fonctions -------
 
@@ -94,3 +98,14 @@ SagefemmeGyne_dome<-creer_structure_clean_dome(SagefemmeGyne_dome)
 SfGoAdresse_dome<-grouper_prof(SagefemmeGyne_dome)
 print(SfGoAdresse_dome)
 #write_xlsx(SfGoAdresse_rhone,"Resultats/sfgyne_gpt.xlsx")
+
+
+#4. MAP-----
+
+map_isere<-projeter_adresses(SagefemmeGyne_isere,SfGoAdresse_isere,"isere")
+saveWidget(map_isere, file = "Resultats/carto_isere.html", selfcontained = TRUE)
+
+map_rhone<-projeter_adresses(SagefemmeGyne_rhone,SfGoAdresse_rhone,"rhone")
+saveWidget(map_rhone, file = "Resultats/carto_rhone.html", selfcontained = TRUE)
+
+#map_dome<-projeter_adresses(SagefemmeGyne_dome,SfGoAdresse_dome,"dome")

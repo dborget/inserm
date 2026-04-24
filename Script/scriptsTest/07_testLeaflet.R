@@ -1,60 +1,63 @@
-library(leaflet)
-library(tidygeocoder)
+# Objectif : obtenir les latitudes et longitudes à partir des regroupements identifiés et les mettre sur une carte
+
+# packages requis
+library(leaflet) # affichage de la carto
+library(tidygeocoder) # fonction geocode, récuperer les coordonnées géo
 library(dplyr)
 library(tmap)
 library(sf)
 
 
 
-## obtenir les latitudes et longitudes 
-addr<-c("CHU GA La Tronche","2 rue de la république Grenoble")
-num_adresse<-c("add1","add2")
-table<-data.frame(addr,num_adresse)
-table
-geocode(table, address=addr, method='osm', lat=latitude, long=longitude)
+# importer les regroupements pour l'isere 
+adresses<-read_excel("Resultats/sfgyne_isere_gpt.xlsx")
+
+# ajouter la colonne adresse de la table initiale pour les structures qui ressortent dans la table SfGoAdrsse_isere
+# récupérer l'adresse la plus fréquemment renseignée pour une valeur "structure_clean" à partir de la table netoyée sageefemmeGyne_isere
+table_comptage_adresse<-group_by(count(SagefemmeGyne_isere, structure_clean, adresse, sort = TRUE), structure_clean)
+adresses_supp<-slice_max(table_comptage_adresse,n, with_ties = FALSE)
+adresses_supp<-select(adresses_supp,-n)
+# Regrouper avec la table adresses
+adresses<-left_join(adresses,adresses_supp, by="structure_clean")
+# unir les colonnes adresse et ville pour un meilleur geocodage
+adresses<-unite(adresses, addr, c(5,2), sep=", ", remove=FALSE)
+# geocoder les adresses
+lat_long_isere<-geocode(adresses,addr, method = 'osm', lat = latitude , long = longitude)
 
 
-# ajouter un unique pour ne pas refaire tourner dse. adresses plusieurs fois 
-
-
-# create a dataframe with addresses
-some_addresses <- tibble::tribble(
-  ~name,                  ~addr,
-  "White House",          "1600 Pennsylvania Ave NW, Washington, DC",
-  "Transamerica Pyramid", "600 Montgomery St, San Francisco, CA 94111",     
-  "Willis Tower",         "233 S Wacker Dr, Chicago, IL 60606",
-  "Gare de Lyon Perrache","Gare de Lyon Perrache",
-  "Domicile", "25 Rue Jean Prévost, 38000 Grenoble"
-)
-some_addresse_2 <- data.frame(name=c("White House","Transamerica Pyramid","Domicile"), addr=c("1600 Pennsylvania Ave NW, Washington, DC", "600 Montgomery St, San Francisco, CA 94111", "25 Rue Jean Prévost, 38000 Grenoble"))
-
-## obtenir les latitudes et longitudes 
-adresses<-read_excel("Resultats/sfgyne_isere_gpt3.xlsx")
-adresses<-unite(adresses, addr, 2:4, sep=", ", remove=FALSE)
-# geocode the addresses
-lat_long_4<-geocode(adresses,addr, method = 'osm', lat = latitude , long = longitude)
-
-
-# mettre sur une carte 1 point
-# map <- leaflet()
-# map <- addTiles(map)
-# map <- addMarkers(map, lng = lat_long_4$longitude[1], lat = lat_long_4$latitude[1], popup = lat_long_4$structure_clean[1])
-# print(map)
-# mettre sur une carte toutes les adresses
+# projeter sur une carte openstreetmap
 map <- leaflet()
 map <- addTiles(map)
 for (i in seq_along(adresses$addr)){
-  map <-addMarkers(map, lng = lat_long_4$longitude[i], lat = lat_long_4$latitude[i], popup = lat_long_4$structure_clean[i])
-  print(map)
+  map <-addMarkers(map, lng = lat_long_isere$longitude[i], lat = lat_long_isere$latitude[i], popup = lat_long_isere$structure_clean[i])
 }
-map <- addMarkers(map, lng = lat_long_4$longitude[1], lat = lat_long_4$latitude[1], popup = lat_long_4$structure_clean[1])
 print(map)
-#for i in seq_along(adresses){
- #point[i]=st_sfc(st_point(c(adresses$latitude[i], adresses$longitude)))
-#}
 
-#point=st_sfc(st_point(c(lat_long_4$latitude[1], lat_long_4$longitude[1])))
+write_csv2(lat_long_isere, "Resultats/coordonnees_geo_isere.csv")
 
-
-
+# fonction projection sur une carte
+# la table d'entrée est une table de groupements d'adresses obteenus à partir du code A2_sfgyne_main
+projeter_adresses<-function (table_nettoyee_depart,table_adresses) {
+  # récupérer l'adresse la plus fréquemment renseignée pour une valeur "structure_clean" à partir de la table netoyée sageefemmeGyne_isere
+  table_comptage_adresse<-group_by(count(table_nettoyee_depart, structure_clean, adresse, sort = TRUE), structure_clean)
+  # créer une table aveec la liste des valeurs de structures_clean associées à l'adreesse la plus fréquente
+  adresses_supp<-slice_max(table_comptage_adresse,n, with_ties = FALSE)
+  adresses_supp<-select(adresses_supp,-n)
+  # Regrouper avec la table adresses
+  table_adresses<-left_join(adresses,adresses_supp, by="structure_clean")
+  # unir les colonnes adresse et ville pour un meilleur geocodage
+  table_adresses<-unite(adresses, addr, c(5,2), sep=", ", remove=FALSE)
+  # geocoder les adresses
+  lat_long<-geocode(adresses,addr, method = 'osm', lat = latitude , long = longitude)
+  # projeter sur une carte openstreetmap
+  map <- leaflet()
+  map <- addTiles(map)
+  for (i in seq_along(adresses$addr)){
+    map <-addMarkers(map, lng = lat_long$longitude[i], lat = lat_long$latitude[i], popup = lat_long$structure_clean[i])
+  }
+  print(map)
+  #exporter les coordonnees
+  write_csv2(lat_long, paste0("Resultats/coordonnees_geo_",table_adresses,".csv"))
+}
+test<-projeter_adresses(SagefemmeGyne_isere,SfGoAdresse_isere)
 

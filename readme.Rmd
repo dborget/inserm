@@ -159,7 +159,10 @@ Rhône :
 
 Puy de dôme : 
 
-
+### Visualisation sur une carte   
+a compléteer
+Pour les adresses dont les coordonnées géoographiques n'étaient pas trouvées, utilisation de openstreetmap pour trouver la bonne adresse, puis corriger dans la fonction corriger_adresse.
+https://www.openstreetmap.or
 # B. Projections des capacités de recrutement des maternités
 
 ## Import des données

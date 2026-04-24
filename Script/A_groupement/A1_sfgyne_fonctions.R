@@ -71,6 +71,10 @@ corriger_adresse_isere<-function(adresse) {
   adresse<-str_replace_all(adresse,"rue de la rpublique", "rue de la republique")
   adresse<-str_replace_all(adresse, "rue belgrade","rue de belgrade")
   adresse<-str_replace_all(adresse,"montee biarde", "montee de la biarde")
+  #correction supp pour geocodage pour match avec openstreemap
+  adresse<-str_replace_all(adresse,"medicedres   avenue de grugliasco","avenue de grugliasco")
+  adresse<-str_replace_all(adresse,"rue docteur calmette", "rue du docteur calmette")
+  adresse<-str_replace_all(adresse,"service departemental de pmi isere", "rue joseph chanrion")
   return(adresse)
 }
 
@@ -86,12 +90,12 @@ creer_structure_clean_isere<-function(table) {
   table$structure_clean<-str_replace(table$structure_clean, "^.*?\\s{2,}","")
   table$mode_exercice<-str_replace(table$mode_exercice, "^.*?\\s{2,}","")
   # renommer les adresses qui ressortent parmi les principales adresses (SfGoAdresse) // spécifique à ce dataframe
-  table <- mutate(table, structure_clean = ifelse(structure_clean == "service departemental de pmi isere", "pmi", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "rue joseph chanrion", "pmi", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "boulevard de la chantourne", "chu ga", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue du medipole", "ch pierre oudot", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "rue docteur calmette"|structure_clean =="rue du docteur calmette", "ghm gre", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue gabriel peri", "cl belledone", structure_clean))
-  table <- mutate(table, structure_clean = ifelse(structure_clean == "montee du docteur chapuis", "ch lucien hussel", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "montee du docteur chapuis"|structure_clean =="ch lucien hussel de vienne", "ch lucien hussel", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue jacques chirac", "hp voiron", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "rue albert londres", "cl des cedres", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue de grugliasco", "medicedres", structure_clean))
@@ -112,7 +116,14 @@ corriger_adresse_rhone<-function(adresse) {
   adresse<-str_replace_all(adresse,"douilly", "d ouilly")
   adresse<-str_replace_all(adresse,"boulevard general leclerc", "boulevard du general leclerc")
   adresse<-str_replace(adresse, "crxrousse", "croixrousse")
-  adresse<-str_replace_all(adresse," ter", "") 
+  adresse<-str_replace_all(adresse," ter", "")
+  #correction supp pour geocodage pour match avec openstreemap
+  adresse<-str_replace(adresse, "place darsonval", "place d arsonval")
+  adresse<-str_replace(adresse, "gpe hosp mutualiste les portes du sud   avenue du  novembre   le couloud feyzin", "avenue du novembre")
+  adresse<-str_replace(adresse, "plateau d ouilly", "route d epinay")
+  adresse<-str_replace(adresse, "hopital lyon sud service  imagerie medicale   chemin du grand revoyet", "chemin du grand revoyet, le but")
+  adresse<-str_replace(adresse, "clinique du parc    boulevard de stalingrad", "boulevard de stalingrad")
+  adresse<-str_replace(adresse, "centre leon berard   rue laennec", "rue laennec")
   return(adresse)
 }
 
@@ -136,8 +147,10 @@ creer_structure_clean_rhone<-function(table) {
   # renommer les adresses qui ressortent parmi les principales adresses (SfGoAdresse) // spécifique à ce dataframe
   table <- mutate(table, structure_clean = ifelse(structure_clean == "service departemental de pmi rhone"|structure_clean =="rue du lac"|structure_clean =="cours de la liberte", "pmi", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue du novembre", "ghm les portes du sud", structure_clean))
-  table <- mutate(table, structure_clean = ifelse(structure_clean == "villefranche"|structure_clean =="plateau d ouilly", "ch nord ouest villefranche", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "villefranche"|structure_clean =="route d epinay", "ch nord ouest villefranche", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "chemin du grand revoyet"|structure_clean == "hcl    chemin du grand revoyet", "hp lyon sud HCL", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "chemin du grand revoyet, le but","imagerie, hp lyon sud", structure_clean))
+  
   table <- mutate(table, structure_clean = ifelse(structure_clean == "grande rue de la croixrousse"|structure_clean == "grand rue de la croix rousse", "hp croix rousse hcl", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "avenue rockefeller", "hp privé natecia", structure_clean))
   table <- mutate(table, structure_clean = ifelse(structure_clean == "boulevard pinel", "hfme HCL", structure_clean))
@@ -220,15 +233,35 @@ grouper_prof<-function(table_finale){
   SfGoAdresse<-summarise(adresse_groupe, nb_professionnel=n_distinct(nom_prenom),.groups="keep")
   SfGoAdresse<-filter(SfGoAdresse, nb_professionnel>3)
   SfGoAdresse<-arrange(SfGoAdresse, desc(nb_professionnel))
-  print(paste0("il y a ", nrow(SfGoAdresse),  " adresses "))
+  print(paste0("il y a ", nrow(SfGoAdresse), " adresses "))
   return(SfGoAdresse)
 }
-# test pour leaflet
-#grouper_prof_3<-function(table_finale){
- # adresse_groupe<-group_by(table_finale, structure_clean, adresse, ville, cp, reseau) 
-  # SfGoAdresse<-summarise(adresse_groupe, nb_professionnel=n_distinct(nom_prenom),.groups="keep")
-  # SfGoAdresse<-filter(SfGoAdresse, nb_professionnel>3)
- # SfGoAdresse<-arrange(SfGoAdresse, desc(nb_professionnel))
-#  print(paste0("il y a ", nrow(SfGoAdresse),  " adresses "))
-#  return(SfGoAdresse)}
 
+#5. Géocodage et Affichage sur une carte
+# fonction pour récupérer les coordonnées géographiques, puis projeter les lieux sur une carte
+# la fonction a pour argument : une table nettoyée (pour un département) et une table de groupements d'adresses, ces tables sont obtenus à partir du code A2_sfgyne_main
+# la table a pour sortie une carte
+projeter_adresses<-function (table_nettoyee_depart,table_adresses,departement) {
+  # récupérer l'adresse la plus fréquemment renseignée pour une valeur "structure_clean" à partir de la table netoyée sageefemmeGyne_isere
+  table_comptage_adresse<-group_by(count(table_nettoyee_depart, structure_clean, adresse, sort = TRUE), structure_clean)
+  # créer une table aveec la liste des valeurs de structures_clean associées à l'adreesse la plus fréquente
+  adresses_supp<-slice_max(table_comptage_adresse,n, with_ties = FALSE)
+  # garder uniquement les colonnes structurre_clean et adresse
+  adresses_supp<-select(adresses_supp,-n)
+  # Regrouper avec la table adresses
+  table_adresses<-left_join(table_adresses,adresses_supp, by="structure_clean")
+  # unir les colonnes adresse et ville pour un meilleur geocodage
+  table_adresses<-unite(table_adresses, addr, c(5,2), sep=", ", remove=FALSE)
+  # geocoder les adresses
+  lat_long<-geocode(table_adresses,addr, method = 'osm',long=longitude,lat=latitude,)
+  #exporter les coordonnees
+  write_csv2(lat_long,paste0("Resultats/coordonnees_geo_",departement,".csv"))
+  # projeter sur une carte openstreetmap
+  map <- leaflet()
+  map <- addTiles(map)
+  for (i in seq_along(table_adresses$addr)){
+    map <-addMarkers(map, lng = lat_long$longitude[i], lat = lat_long$latitude[i], popup = lat_long$structure_clean[i])
+  }
+  print(map)
+  return(map)
+}
