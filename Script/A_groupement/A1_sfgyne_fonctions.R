@@ -22,8 +22,9 @@ formater_table_ars<-function(table){
   table<- select(table, -c("Ville2" ,"CP"))
   # la colonne CP2 est renommée cp (code postal)
   table<-rename(table, "cp"="CP2")
-  #ajouter une colonne reseau
+  #ajouter une colonne reseau et type
   table<-mutate(table,reseau=NA)
+  table<-mutate(table, type=NA)
   #supprimer les professionnels ayant pour profession gynecologie medicale
   table<-filter(table, profession!="Gynécologie médicale")
   #remplacer l'adresse par la valeur de la structure si il n'y a pas de valeur ou un vide dans la colonne adresse
@@ -171,7 +172,9 @@ creer_structure_clean_rhone<-function(table) {
 # la fonction prend pour argument une chaine de characteres
 # la fonction donne en sortie une chaine de charactères
 corriger_adresse_dome<-function(adresse) {
-  adresse<-str_replace_all(adresse, "", "") 
+  adresse<-str_replace_all(adresse, "dr", "docteur") 
+  adresse<-str_replace_all(adresse, "lhospital", "l hospital")
+  adresse<-str_replace_all(adresse, "chu    place lucie aubrac", "place lucie aubrac")
   return(adresse)
 }
 
@@ -185,10 +188,13 @@ creer_structure_clean_dome<-function(table) {
   table$structure_clean<-str_replace(table$structure_clean, "^.*?\\s{2,}","")
   table$mode_exercice<-str_replace(table$mode_exercice, "^.*?\\s{2,}","")
   # renommer les adresses qui ressortent parmi les principales adresses (SfGoAdresse) // spécifique à ce dataframe
-  #table <- mutate(table, structure_clean = ifelse(structure_clean == "place lucie aubrac", "hp estaing", structure_clean))
- # table <- mutate(table, structure_clean = ifelse(structure_clean == "rue de la chataigneraie", "cl chataigneraie", structure_clean))
-  #table <- mutate(table, structure_clean = ifelse(structure_clean == "route de fau", "ch tiers", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "place lucie aubrac", "hp estaing", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "rue de la chataigneraie", "cl chataigneraie", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "route de fau"|structure_clean =="ch de thiers", "ch thiers", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "rue du docteur sauvat", "ch issoire", structure_clean))
+  table <- mutate(table, structure_clean = ifelse(structure_clean == "place michel de l hospital", "pmi", structure_clean))
   return(table)
+  
 }
 
 #3. Ajout reseau périnnatal-----
@@ -229,15 +235,70 @@ completer_reseau<-function(jointure_commune){
 # la fonction a pour sortie une table avec les adresses présentes au moins 3 fois. 
 
 grouper_prof<-function(table_finale){
-  adresse_groupe<-group_by(table_finale, structure_clean, ville, reseau) 
+  adresse_groupe<-group_by(table_finale, structure_clean, ville, reseau, type) 
   SfGoAdresse<-summarise(adresse_groupe, nb_professionnel=n_distinct(nom_prenom),.groups="keep")
   SfGoAdresse<-filter(SfGoAdresse, nb_professionnel>3)
   SfGoAdresse<-arrange(SfGoAdresse, desc(nb_professionnel))
   print(paste0("il y a ", nrow(SfGoAdresse), " adresses "))
   return(SfGoAdresse)
 }
+# La fonction groupement prof permet de faire ressortir les lieux d'exercice avec plus de 2 professionnels (sages femmes ou gynécologues). Elle est utilisée pour le Puy de Dôme.
+
+grouper_prof_3<-function(table_finale){
+  adresse_groupe<-group_by(table_finale, structure_clean, ville, reseau, type) 
+  SfGoAdresse<-summarise(adresse_groupe, nb_professionnel=n_distinct(nom_prenom),.groups="keep")
+  SfGoAdresse<-filter(SfGoAdresse, nb_professionnel>2)
+  SfGoAdresse<-arrange(SfGoAdresse, desc(nb_professionnel))
+  print(paste0("il y a ", nrow(SfGoAdresse), " adresses "))
+  return(SfGoAdresse)
+}
+#4. BIS. Groupement professionnels----
+# La fonction groupement prof total permet de faire ressortir les lieux d'exercice (sages femmes ou gynécologues).
+# la fonction a pour argument la table nettoyee contenant la liste des sages femmees et gyne d'un département. 
+# la fonction a pour sortie une table avec les adresses groupés par adresses. 
+
+grouper_prof_total<-function(table_finale){
+  adresse_groupe<-group_by(table_finale, structure_clean, ville, reseau, type) 
+  SfGoAdresse<-summarise(adresse_groupe, nb_professionnel=n_distinct(nom_prenom),.groups="keep")
+  SfGoAdresse<-arrange(SfGoAdresse, desc(nb_professionnel))
+  print(paste0("il y a ", nrow(SfGoAdresse), " adresses "))
+  return(SfGoAdresse)
+}
 
 #5. Géocodage et Affichage sur une carte
+
+# fonction pour préciser le type d'acteurs afin de réaliiser des conditions sur QGIS
+completer_type<-function(table){
+  table$type<- case_when(
+    table$structure_clean=="ghm les portes du sud"|
+      table$structure_clean=="hfme HCL"|
+      table$structure_clean=="hp croix rousse hcl"|
+      table$structure_clean=="hp privé natecia"|
+      table$structure_clean=="ch st joseph"|
+      table$structure_clean=="clinique val ouest vend"|
+      table$structure_clean=="ch nord ouest villefranche"|
+      table$structure_clean=="hp lyon sud HCL"|
+      table$structure_clean=="medipole hp mut"|
+      table$structure_clean=="ch montgelas"|
+      table$structure_clean=="ch ste foy"|
+      table$structure_clean=="polyclinique baeujolais"|
+      table$structure_clean=="cl du Parc, suivi et echo"|
+      table$structure_clean=="hp estaing"|
+      table$structure_clean=="cl chataigneraie"|
+      table$structure_clean=="ch thiers"|
+      table$structure_clean=="ch issoire"|
+      table$structure_clean=="chu ga"|
+      table$structure_clean=="ghm gre"|
+      table$structure_clean=="h lucien hussel"|
+      table$structure_clean=="cl belledone"|
+      table$structure_clean=="hp voiron"|
+      table$structure_clean=="cl des cedres"~ "Maternite",  
+    
+    TRUE ~ "cabinet"
+    
+  )
+  return(table)
+}
 # fonction pour récupérer les coordonnées géographiques, puis projeter les lieux sur une carte
 # la fonction a pour argument : une table nettoyée (pour un département) et une table de groupements d'adresses, ces tables sont obtenus à partir du code A2_sfgyne_main
 # la table a pour sortie une carte
@@ -246,12 +307,12 @@ projeter_adresses<-function (table_nettoyee_depart,table_adresses,departement) {
   table_comptage_adresse<-group_by(count(table_nettoyee_depart, structure_clean, adresse, sort = TRUE), structure_clean)
   # créer une table aveec la liste des valeurs de structures_clean associées à l'adreesse la plus fréquente
   adresses_supp<-slice_max(table_comptage_adresse,n, with_ties = FALSE)
-  # garder uniquement les colonnes structurre_clean et adresse
+  # garder uniquement les colonnes structure_clean et adresse
   adresses_supp<-select(adresses_supp,-n)
   # Regrouper avec la table adresses
   table_adresses<-left_join(table_adresses,adresses_supp, by="structure_clean")
   # unir les colonnes adresse et ville pour un meilleur geocodage
-  table_adresses<-unite(table_adresses, addr, c(5,2), sep=", ", remove=FALSE)
+  table_adresses<-unite(table_adresses, addr, c(6,2), sep=", ", remove=FALSE)
   # geocoder les adresses
   lat_long<-geocode(table_adresses,addr, method = 'osm',long=longitude,lat=latitude,)
   #exporter les coordonnees
@@ -265,3 +326,4 @@ projeter_adresses<-function (table_nettoyee_depart,table_adresses,departement) {
   print(map)
   return(map)
 }
+

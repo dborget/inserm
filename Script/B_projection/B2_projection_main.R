@@ -73,7 +73,7 @@ table_entree_aurore_i <- mutate(table_entree_aurore_i, maternite=recode(maternit
 
 ### 2.2.2. scenario ----
 # appel de la fonction creer scenario
-scenario_aurore_i<-lancer_scenario(table_entree_aurore_i
+scenario_aurore_i<-lancer_scenario(table_entree_aurore_i)
 print(scenario_aurore_i)
 
 ### variables d'entrées et appel de la fonction annualiser scenario 
@@ -132,16 +132,16 @@ write_xlsx(scenario_aurore_r_annuel, paste0("Data_inter/scenario_annuel_aurore_r
 table_entree_rspa_p <- read.csv2("Data_raw/mater_acc_PddRSPA.csv", header=TRUE)
 table_entree_rspa_p <-mutate(table_entree_rspa_p, accouchement=accouchement*length(mois)/12)
 maternites_rspa_p<-table_entree_rspa_p$maternite
-table_entree_rspa_p <- mutate(table_entree_rspa_p, maternite=recode(maternite,"HP Estaing CHU"="est","Clinique Chataigneraie "="cha","CH de Tiers"="tie"))
+table_entree_rspa_p <- mutate(table_entree_rspa_p, maternite=recode(maternite,"HP Estaing CHU"="est","Clinique Chataigneraie "="cha","CH Issoire"="iss","CH de Tiers"="tie"))
 
 ### 2.4.2. scenario ----
-# appel de la fonction creer scenario
+# appel de la fonction lancer scenario
 scenario_rspa_p<-lancer_scenario(table_entree_rspa_p)
 #scenario_rspa_p[[1]]
 
 ### variables d'entrées et appel de la fonction annualiser scenario 
 # utiiliser les prefixes des colonnes, pour récupérer l'informations selon si colonnes acc, inf, inc
-prefixes_rspa_p <- c("est_","cha_","tie_") 
+prefixes_rspa_p <- c("est_","cha_","iss_","tie_") 
 scenario_rspa_p_annuel<-annualiser_scenario(scenario_rspa_p,maternites_rspa_p,prefixes_rspa_p)
 print(scenario_rspa_p_annuel)
 

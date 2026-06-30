@@ -17,19 +17,19 @@ editor_options:
 
 # Introduction : objectif du document
 
-Dans le cadre de la cohorte Filomene, l'équipe d'épidémiologie environnementale participe à la définition des protocoles de recrutement. Ce projet de programmation a pour objectif A) d'identifier des lieux de recrutement et B) de réaliser des scénarios de recrutement afin de préciseer les stratégies de recrutement. 
+Dans le cadre de la cohorte Filomene, l'équipe d'épidémiologie environnementale participe à la définition des protocoles de recrutement. Ce projet de programmation a pour objectif A) d'identifier des lieux de recrutement et B) de réaliser des scénarios de recrutement afin de préciser les stratégies de recrutement. 
 Le présent document précise comment lancer les programmes et détaille les étapes et choix réalisés.
 ---
 
 # Prérequis et lancement des programmes
 **Pour installer les packages requis pour le lancement du présent document rmd et nettoyer l'espace de travail : les 2 blocs de codes suivants ont été lancés lors du Run all ou à lancer ici : **
-```{r packages, include=FALSE}
+```{r packages}
 library(rmarkdown) # ecrire sur rmd
 library(markdown) # ecrire sur rmd
 library(knitr) # lancer un html
 ```
 
-```{r clear-env, include=FALSE}
+```{r clear-env}
 # se placer dans le dossier du projet
 setwd("~/Documents/Scenario_Filomene_R")
  #réinitialiser les listes à vide
@@ -41,95 +41,115 @@ knitr::opts_chunk$set(echo = TRUE)
 
 **Pour lancer les programmes** : dans le dossier Script, ouvrir les programmes suivants :
 
-- pour le travail sur le groupement : ouvrir le dossier A_groupement, et lancer le script *A2_groupement_main.R*
+- pour le travail sur le groupement : ouvrir le dossier A_groupement, et lancer le script *A2_sfgyne_main.R*
 - pour le travail sur les projections : ouvrir le dossier B_projection, et lancer le script *B2_projection_main.R*
 
 
-# A. Identification des lieux d'exercice des sages-femmes et gynécologues 
+# A. Identification des lieux d'exercice des sage-femmes et gynécologues 
 
 ![Schéma des étapes du code](doc/schemaGmt.pdf){width=90%}
 
 ## Préparation des données 
 
 ### Origine des données 
-Les données concernant les professionnels de santé proviennent de l'ARS AURA (Auveregne-Rhône-Alpes) : [lien vers les fichiers sources du site de l'ARS](https://www.auvergne-rhone-alpes.ars.sante.fr/annuaire-des-professionnels-intervenant-dans-le-systeme-de-sante-en-auvergne-rhone-alpes). Les fichiers extraits sont le fichier des sages femmes et le fichier des médecins généralistes et spécialistes. Sur ce second fichier, uniquement les gynécologues ont été conservés. Un premier nettoyage sur excel a permis de conserver certaines colonnes : profession, nom, prenom, structure, adresse de la structure, cp, ville, mode d'exercice. 
+* Professionnels de santé :  
+  * Source : les données proviennent de l’ARS AURA (Auvergne-Rhône-Alpes) : [lien vers les fichiers sources du site de l'ARS](https://www.auvergne-rhone-alpes.ars.sante.fr/annuaire-des-professionnels-intervenant-dans-le-systeme-de-sante-en-auvergne-rhone-alpes) 
+  * Fichiers extraits : 
+    * le fichier des sage femmes : Sage-femme_Février2025.xlsx
+    * le fichier des médecins généralistes et spécialistes : Médecins généralistes et spécialistes_Aout2023. Sur ce fichier, uniquement les gynécologues ont été conservés. 
+  * Nettoyage avant import : conservation uniquement des colonnes : profession, nom, prenom, structure, adresse de la structure, cp, ville, mode d’exercice. Fichier : sagesfemmes_gyne_aura.csv 
 
-*Dans un premier temps, les codes ont été construits à partir d'un fichier unniquement composés des sagees-femmes et gynécologues d'Isère. 
-Une fois terminé pour l'Isère, nous avons finalement décidé d'importer l'ensemble des données sur l'AURA puis de filtrer sur chaque département d'intérêt.*
+* Codes communes et communautés de communes 
+  * Source : les données proviennent de datagouv par le fournisseur Ville de rêve : [lien vers les données source](https://explore.data.gouv.fr/fr/datasets/6745d9ae4524d845d2138193/?reg_nom__exact=Auvergne-Rh%C3%B4ne-Alpes#/resources/f5df602b-3800-44d7-b2df-fa40a0350325) 
+  * Fichier extrait : communes_aura_2025.csv
+  * Nettoyage avant import :  Un filtre sur la région AURA sur les données en ligne a été appliqué  avant d’extraire le fichier.
 
-Les données concernant les codes communes et communautés de communes proviennent de datagouv par le fournisseur Ville de rêve : [lien vers les données source](https://explore.data.gouv.fr/fr/datasets/6745d9ae4524d845d2138193/?reg_nom__exact=Auvergne-Rh%C3%B4ne-Alpes#/resources/f5df602b-3800-44d7-b2df-fa40a0350325). Un filtre sur les données en ligne a été appliqué sur la région AURA avant d'extraire le fichier.
+Les données sont stockées dans le dossier Data_raw.
 
 ### Import des donnees
 
-Import de la table des données contenant les sites d'exercice des sages-femmes et gynécologues d'AURA.   
-Import d'une table de correspondance entre les communautés de communes et les code INSEE.  
-Ces documents sont stockés dans le dossier Data_raw.
+* Import de la table des données contenant les sites d'exercice des sages-femmes et gynécologues d'AURA 
+* Import d'une table de correspondance entre les communautés de communes et les code INSEE.  
+
 
 ### Nettoyage des tables importées 
 Le script A1_sfgyne_fonctions comprend les différentes fonctions utilisées pour nettoyer, traiter la table initiale de sages-femmes et gynécologues et la table code_commune. 
 
 #### Table SagefemmeGyne_AURA
+* Étape 1 : Formatage  : La fonction *formater_table_ars*  renomme les colonnes, fusionne et sépare certaines colonnes : 
+  * colonne Adresse :  suppression des numéros de rue, cp, ville (initialement présent dans la même colonne) afin de ne garder que la rue ou l’avenue. 
+  * code postal du fichier gynécologues : récupération du code postale à partir de la colonne adresse de la structure (car le fichier précise uniquement le numéro de département) 
 
-La fonction *formater_table_ars* renomme les colonnes, fusionne et sépare certaines colonnes.   
-Il retraite notamment la colonne Adresse. Il supprime les numéros de rue, cp, ville (initialement présent dans la meme colonne) afin de ne garder que la rue ou l'avenue. Pour le code postal, le fichier gynecologues de l'ARS précisait uniquement le numéro de département. Le code postal a été récupéré à partir de la colonne adresse de la structure.   
-Les gynécologues médicaux sont supprimées pour ne garder que les gynecologues obstetriciens. 
-La fonction *nettoyer_ecriture* permet de retirer les carctères spéciaux des colonnes de type character.
+* Etape 2 :suppression des gynécologues médicaux pour conserver uniquement les gynécologues obstétriciens. 
 
-Après les premieres corrections, sont conservées de la table uniquement les données des départements Isère (38), Puy de dôme (63) et Rhône (69).   
-Puis, les fonctions *joindre_réseau* et *compléter_reseau* ajoutent une colonne "réseau" à la table SagefemmeGyne et complète le nom du réseau périnatal associé à cette adresse. Cette étape est détailléee dans la partie Traitement ci dessous.
+* Etape 3 : retrait de caractère spéciaux : La fonction *nettoyer_ecriture* permet de retirer les caractères spéciaux des colonnes de type character (exemples : &,!,-,etc) 
 
-On obtient la table **SagefemmeGyne_clean**, enregistrée dans le dossier Data_intermediaire.
+* Étape 4 : conservation des départements Isère (38), Puy de dôme (63) et Rhône (69).
 
-A partir de cette table, 3 sous tables sont constituées pour chacun des 3 départements : **SagefemmeGyne_isere, SagefemmeGyne_rhone, Sagefemmegyne_dome**.
-Un nettoyage est réalisé pour chaque table avec des fonctions personnalisées pour chacune. 
-Les fonctions se constituent de la même manière pour chaque département : la fonction *corriger_adresses_nomDepartement* corrige les adresses lorsque des erreurs d'ecriture sont identifiées. La fonction *créer_structure_clean_nomDepartement* créée ensuite une colonne structure_clean, duplication de la colonne adresse dans laquelle des corrections manuelles sont réalisées. Notamment, en affichant les lignes avec des doubles espaces, cela a permis de rectifié plusieurs erreurs. Cette colonne sera utilisée pour réaliser les regroupements de professionnels par adresse. 
+* Etape 5 : ajouter la variable « Reseau » 
+
+
+**On obtient la table SagefemmeGyne_clean, enregistrée dans le dossier Data_intermediaire.**
+
+* Étape 6 : Création de trois tables pour chaque département concerné :
+  * SagefemmeGyne_isere
+  * SagefemmeGyne_rhone
+  * Sagefemmegyne_dome. 
+
+* Étape 7 : Corrections « à la main »  pour chaque table avec des fonctions personnalisées pour chacune. 
+  * Correction 1 : la fonction *corriger_adresses_nomDepartement* corrige les adresses lorsque des erreurs d’écriture sont identifiées. 
+  * Correction 2 : La fonction *créer_structure_clean_nomDepartement* créée ensuite une colonne structure_clean permettant de rectifier plusieurs erreurs de saisies. Cette colonne sera utilisée pour réaliser les regroupements de professionnels par adresse. La visualisation des adresses de regroupement des professionnels a permis de réaliser des corrections supplémentaires pour renommer les lieux, corriger des adresses. NB : lorsqu’il s’agit d’un établissement de type maternité, la valeur de la colonne structure clean a été renommée avec le nom de l’établissement. Lorsqu’il s’agit d’un cabinet libéral, le nom de la rue/avenue a été gardé.
+
 
 #### Table code_commune
-La fonction *nettoyer_adresse* a également été appliquée à la table code_commune afin de supprimer les tirets, majuscules et ainsi homogéniser le nom des villes des deux fichiers qui serviront pour la jointure.
-On obtient la table **code_commune_clean**, enregistrée dans le dossier Data_intermediaire.
+
+* Etape 1 : formatage : La fonction *nettoyer_adresse* a été appliquée afin de supprimer les tirets, majuscules et ainsi homogéniser le nom des villes. 
+
+**On obtient la table code_commune_clean, enregistrée dans le dossier Data_intermediaire.**
+
 
 ### Précisions sur les variables de la table SagefemmeGyne_clean
 Une table SageFemmeGyne a la structure suivante :
 
-* une ligne par activité par professionnel, un.e professionnel.le a autant de lignes que de lieux d'exercice.
+* une ligne par activité par professionnel, un professionnel a autant de lignes que de lieux d'exercice.
 * 8 variables : 
-  * profession : sage-femme ou gynecologue obstetrique
+  * profession : sage-femme ou gynecologue obstétrique
   * nom_prenom
   * structure : lieu d'exercice du professionnel. Dans le cas de cabinet libéral, certains noms semblent reprendre le nom_prenom 
   * adresse : adresse ou établissement 
   * cp : code commune. 
     *attention: il peut donc y avoir plusieurs CP différents pour une même ville (notamment grenoble)*
   * ville 
-  * mode d'exercice : liberal ou salarie
+  * mode d'exercice : libéral ou salarié
   * structure_clean : nom de l'etablissement ou, pour les cabinets libéraux, adresse  
 
 
 ## Traitement des données 
 
 ### Ratachement du nom du réseau   
+* Etape 1 : jointure des fichiers  grace à la fonction  *fonction joindre_reseau*  pour joindre code_commune_clean et SagefemmeGyne_clean grâce à la variable « ville ».
+Une vérification est réalisée via les codes postaux pour vérifier que le code postal de la structure d’activité de la table sagefemmegyne soit bien compris dans les codes postaux de la ligne jointe par la ville de la table code_commune.
 
-A partir du fichier des code_commune, on réalise une jointure avec la table SagefemmeGyne_clean.
+* Etape 2 : compléter la variable « Réseau » : quand la variable « Reseau est manquante,  la fonction completer_reseau comlète  le nom du reseau périnatal selon la communauté de commune. 
 
-La fonction *joindre_reseau* unit les tables, la jointure est réalisée sur la colonne ville. 
-Plusieurs essais de jointure ont été réalisés et la ville est la colonne la plus pertinente pour réaliser une bonne correspondance. Une vérification est réalisée via les codes postaux pour vérifier que le code postal de la structure d'activité de la table sagefemmegyne soit bien compris dans les codes postaux de la ligne jointe par la ville de la table code_commune. 
+*Nb : les cabinets adhèrent à un réseau de manière volontaire et ne sont donc pas tous membres d’un réseau. Nous avons choisi de les rattacher à un réseau pour plus de lisibilité sur le document final identifiant les lieux potentiels de recrutement qui est structuré par réseau.*
 
-La fonction *completer_reseau* adapte ensuite le nom du reseau périnatal selon la communauté de commune. En réalité, les cabinets adhèrent à un réseau de manière volontaire et ne sont donc pas tous membres d'un réseau. Nous avons tout de même choisi de les rattacher à un réseau pour plus de lisibilité sur notre document final identifiant les lieux potentiels de recrutement qui est structuré par réseau.
+L’**Isère**, département 38, comprend 18 communautés de communes. Le réseau prend la valeur :
+* Aurore pour les communautés de communes suivantes : Communauté d'Agglomération (CA) de vienne condrieu, Communauté de Communes (CC) les balcons du dauphine, CA porte de l’isere (capi), CC collines isere nord communauté, CC lyon saint exupery en dauphine
+* RPAI pour les communautés de communes suivantes : Grenoble Alpes metropole, cc le gresivaudan, ca du pays voironnais, cc saint marcellin vercors isere communaute, bievre isere, cc du massif du vercors, cc du trieves, cc les vals du dauphine, cc entre bievre et rhône, cc cœur de chartreuse, cc de la matheysine, cc de l’oisans, cc de bievre est.
 
-**L'Isère**, département 38, comprend 18 communautés de communes. Le réseau prend la valeur : 
+Pour le **Rhône** et le **Puy de Dôme**, l’ensemble des lieux de chaque département est relié à un même réseau périnatal : Aurore pour le Rhône et RSPA (Réseau de Santé Périnatal d’Auvergne) pour le Puy de Dôme. Le mapping se fait directement par le code postal.
 
-* Aurore pour les com-com suivantes : ca vienne condrieu, cc les balcons du dauphine, ca porte de l'isere (capi), cc collines isere nord communaute, cc lyon saint exupery en dauphine
-* RPAI pour les com-com suivantes : grenoble alpes metropole, cc le gresivaudan, ca du pays voironnais, cc saint marcellin vercors isere communaute, bievre isere, cc du massif du vercors, cc du trieves, cc les vals du dauphine, cc entre bievre et rhône, cc cœur de chartreuse, cc de la matheysine, cc de l'oisans, cc de bievre est. 
-
-Pour **le Rhône** et **le Puy de Dôme**, il n'y a pas besoin de recourir mapping via les communautés de communes car l'ensemble des lieux de chaque départemeent est relié à un même réseau périnatal : Aurore pour le Rhône et RSPA (réseau de santé périnatal d'Auvergne) pour le Puy de Dôme. Le mapping se fait directement par le code postal. 
 
 ### Lieux avec 4 professionnels ou plus
- 
-Pour chaque table SagefemmeGyne_isere, SagefemmeGyne_rhone, SagefemmeGyne_dome :  
+Les étapes suivantes ont été ralisées pour chaque table SagefemmeGyne_isere, SagefemmeGyne_rhone, SagefemmeGyne_dome
+* Etape 1 : identification du nombre de professionnels par lieu : La fonction *grouper_prof*  permet de générer une table regroupant le nombre de professionnels par adresse (variable : structure_clean) 
 
-La fonction *grouper_prof* a pour objectir de dégager les lieux avec au moins 4 professionnels exerçants dans ce lieu. Le groupement est réalisé via la colonne structure_clean. 
-  
-La visualisation des adresses de regroupement des professionnels a permis de réaliser des corrections manuelles supplémentaires pour renommer les lieux, corriger des adresses. Ces corrrections sont ajoutées à la fonction de correction correspondant au département définies dans la partie Nettoyage des données. 
+* Etape 2 : conservation des lieux avec n professionnels ou plus 
+** Pour l'Isère et le Rhône : n=nb_professionnel>= 4,
+** Pour le Puy de Dome : n=nb_professionnel>= 3.
 
+**On obtient un table pour chaque département sfgyne_depart_gpt  stockée dans le dossier Résultats.**
 Chacune des 3 tables de sortie SfGoAdresse a les données suivantes : 
 * adresse
 * ville
@@ -137,38 +157,40 @@ Chacune des 3 tables de sortie SfGoAdresse a les données suivantes :
 * nombre de professionnels
 
 
-*Commentaires :* 
-Lorsqu'il s'agit d'un établissement de type maternité, la valeur de la colonne structure clean a été renommée avec le nom de l'établissement dans la fonction creer_structure_clean_isere.   
-Lorsqu'il s'agit d'un cabinet libéral, le nom de la rue/avenue a été gardé. 
+#### Limites identifiées sur les regroupements : 
 
-Les tables pour chaque département **sfgyne_depart_gpt** sont stockés dans le dossier Résultats. 
+* Le périmètre choisi à partir de la liste des sage-femmes et gynécologues exclut les radiologues et échographistes.  
+* Les regroupements ayant été réalisés à partir des adresses, quelques erreurs d'approximations sont présentes. 
 
-##### Limites identifiées sur les regroupements : 
+**Isère** : 
 
-Le périmètre choisi à partir de la liste des sage-femmes et gynécologues exclut les radiologues et échographistes. Toutefois, les radiologues voient dee nombreux publics et pas uniquement la femme enceinte. Nous avons préféré cibler sur des professionnels coonsultant principalemeent des femmes enceintes. 
-Les regroupements ayant été réalisés à partir des adresses, quelques erreurs approximations sont présentes. 
+* la Rue Eugene Chavant correspond aux echographies du centre Gynecho dont des gynécologues travaillent également à la clinique belledone.
 
-Isère : 
-
-* la Rue Eugene Chavant correspondrait peut être aux consultations d'anesthésie de la clinique belledone.
-
-Rhône : 
-* le regroupement de l'hôptal privé natecia, à l'adresse avenue rockefeller comprend aussi les professionnels exerçant au centre médical ambroise parre.
+**Rhône** : 
+* le regroupement de l'hôptal privé natecia, à l'adresse avenue rockefeller comprend aussi les professionnels exerçant au centre médical Ambroise Parré.
 * le regroupement de la clinique du val d'ouest vendome, à l'adresse chemin de la vernique comprend aussi les professionnels exerçant au médicentre.
 * l'imagerie Caladoise n'apparaît pas. Elle est située à la même adresse que la polyclinique du Beaujolais.Cependant les professionnels enregistrés au centre d'imagerie sont les radiologues qui ne ressortent pas dans ce travail. 
 
-Puy de dôme : 
+**Puy de Dôme** : 
 
 ### Visualisation sur une carte   
-a compléteer
-Pour les adresses dont les coordonnées géoographiques n'étaient pas trouvées, utilisation de openstreetmap pour trouver la bonne adresse, puis corriger dans la fonction corriger_adresse.
-https://www.openstreetmap.or
+La fonction *projeter_adresses* geocode les adresses pour les placer sur une carte. 
+Pour les adresses dont les coordonnées géoographiques n'ont pas donné lieux à un géocodage,  openstreetmap (https://www.openstreetmap) a été utiliser pour trouver la bonne adresse, puis corriger dans la fonction corriger_adresse.
+
+Deux sorties sont enregistrées dans le Dossier "Résultats" : 
+* les cartographies **cart_departement**,
+* les données géoocodées **coordonnees_geo_departement**.
+
 # B. Projections des capacités de recrutement des maternités
 
 ## Import des données
+
 Un flow chart illustre les établissements du réseau. Il s'agit du document "Scenario_RECRUT_DocTravail_20260224" disponible sur Resana (Filomene_AURA).
-Au préalable, pour chaque réseau par département, un excel a été réalisé avec le nombre de naissances annuelles par maternité à partir du flowchart. Ces excel **mater_accDepartementReseau** sont enregistrés dans le dossier Data_raw.  
-Les nombres de naissances proviennent des données PMSI de 2023 disponible via la rubrique santé périnatale du[site scansanté](https://www.scansante.fr/).   
+
+Maternités et accouchements : 
+* Pour chaque réseau par département, un excel a été réalisé avec la liste des maternité et leur nombre de naissances annuelles. **Ces tables d'entrée *mater_accDepartementReseau* sont enregistrées dans le dossier Data_raw.** 
+* Les nombres de naissances proviennent des données PMSI de 2023 disponible via la rubrique santé périnatale du[site scansanté](https://www.scansante.fr/).
+
 Pour actualiser les données, il est possible de modifier chaque excel source. Puis de les enregistrer au format csv. 
 
 
@@ -179,33 +201,45 @@ Selon les maternités, le scenario le plus adapté pourra différer.
 Le script "B1_projection_fonctions" définit les fonctions requises pour créer et lancer les scenarios.
 
 ### Les variables d'entrées 
-Un scenario est lancé pour une table d'entrée propre à un réseau périnatal d'un département. 
-Les réseaux étudiés sont les suivants : RPAI Isère, AURORE Isère, AURORE Rhône, RSPA Puy de Dôme. 
-Pour chaque table, la colonne maternité est modifiée pour simplifier les noms des maternités. (Les noms initiaux et complets sont conservés dans une variable pour l'étape finale.)
 
-Par exemple, pour le réseau RPAI, la table d'entrée comprend une colonne *maternite* avec le nom des maternités du réseau (HCE CHUGA, GHM Grenoble,  CH Voiron, Clinique de Belledone, Clinique des Cèdres) et une colonne *accouchement* avec le nombre de naissances annuelles.
-
-Les autres données d'entrées sont :
-
+Pour un scenario, voici les arguments d'entrée : 
+* Une table d'entrée propre à un réseau périnatal d'un département. 
 * la variable inf, vecteur correspondant aux pourcentages de femmes enceintes informées de Filomene,via de l'information active ou passive. 
 * la variable inc, vecteur correspondant aux pourcentages de femmes enceintes incluses dans Filomene, ayant été informées de la cohorte
 * la variable mois, correspondant au nombre de mois pris pour la simulation
-Ces trois variables sont communes à l'ensemble des scenario et placées en début de code.
-
-### Les scenarios
-Pour chaque table, trois étapes se succédent à partir des fonctions suivantes : 
-La fonction *créer scenario* permet de créer une table avec autant de lignes que la longueur de la variable mois et de lisser le nombre d'accouchements selon le nombre de mois. Ensuite, elle calcule le nombre de femmes informées puis incluses selon les hypothèses saisies sur le pourcentages de femmes informées incluses par rapport au nombre d'accouchements.  
-
-La fonction *lancer scenario* permet de créer une liste de plusieurs tables. La liste se complète au fur et à mesure que la boucle parcourt les valeurs des vecteurs inf et inc et applique la fonction créer scenario à chaque couple (inf, inc). Le nombre de scenarios dépend de la longueur des vecteurs inf et inc, il y a inf*inc scenarios.
-Le résultat est une table de scenarios par réseau. Il s'agit des variables **scenario_nomReseau**.  
-
-Puis, la fonction *annualiser* crée une liste de plusieurs tables à partir d'une variable scenario obtenue précédemment. Chaque table contient la liste des maternités d'un réseau (par département) en ligne et calcule la somme des valeurs des colonnes accouchements, informées et incluses, issues de chaque élément par réseau. 
-Pour appliquer la donction annualiser, il est nécessaire au préalable de définir la liste des préfixes de la table que sont les noms des maternités. En effet, le préfixe permet d'identifier les colonnes qui concernent la maternité.
+Les trois variables inf, inc, mois sont communes à l'ensemble des scenario.
 
 
-Le résultat une table de scenarios annualisés par réseau. Il s'agit des variables **scenario_annuel_nomReseau**.
 
-Enfin, afin de faciliter la réalisation des liens pour la synthèse sur excel, une boucle permet de parcourir l'ensemble des scenarios annualisés de chaque réseau et de les rassembler dans une même table. Attention, cette table ne fait plus apparâître les réseaux. Une fois exporté au format excel dans le dossier Résultat (**scenario_fusionnes**), nous obtenons l'ensemble des maternités sur un même onglet. Cela facilite les liens avec le document de synthèse excel Scenario_recrut.  
+### Nettoyage des tables
+* Etape 0 : renommer les maternités
+Pour chaque table, la colonne maternité est modifiée pour simplifier les noms des maternités. (Les noms initiaux et complets sont conservés dans une variable pour l'étape finale.)
 
-*A noter en cas de modifications : *La somme des valeurs est calculée sur 12 mois. Il faudra être vigilant si la variable mois devait évoluer et s'assurer de préciser sur quelle période sont calculés les valeurs issues de la fonction annualiser.
 
+###Les scenarios
+Pour chaque table, trois étapes se succédent : 
+* Etape 1 : formater la table
+** La fonction *créer scenario* crée une table avec autant de lignes que la longueur de la variable mois et de lisser le nombre d'accouchements selon le nombre de mois. 
+** la fonction calcule le nombre de femmes informées puis incluses selon les hypothèses saisies 
+
+* Etape 2 : lancer les scenarios pour une tablee
+** La fonction *lancer scenario* permet de créer une liste de plusieurs tables. Une boucle  applique la fonction créer scenario à une table pour chaque couple (inf, inc). Le nombre de scenarios dépend de la longueur des vecteurs inf et inc, il y a inf*inc scenarios.
+Le résultat est une table de scenarios par réseau **scenario_nomReseau**. 
+
+* Etape 3 : annualiser les résultats
+**  La fonction *annualiser* crée une liste constituée des plusieurs tables générées pour chaque couple d'hypothèses (inf, inc). Une table contient la liste des maternités d'un réseau en ligne et calcule la somme des valeurs des colonnes accouchements, informées et incluses, issues de chaque élément par réseau. 
+** au préalable, définir la liste des préfixes de la table que sont les noms des maternités (permettant d'identifier les colonnes qui concernent la maternité). 
+Le résultat une table de scenarios annualisés par réseau nommé **scenario_annuel_nomReseau**.
+
+* Etape 4 : fusionner les résultats de l'ensemble des réseaux de phase 1 AURA 
+** une boucle permet de rassembler dans une même table l'ensemble des maternités et résultats.
+** Une fois exportée au format excel dans le dossier **Résultat** (**scenario_fusionnes_annuel_date**), nous obtenons l'ensemble des maternités sur un même onglet. Cela facilite les liens avec le document de synthèse excel Scenario_recrut.  
+
+*A noter en cas de modifications de la variable mois : * La somme des valeurs est calculée sur 12 mois. Si la variable mois est modifiée, il faut modifier la période sur laquelle sont calculées les valeurs issues de la fonction annualiser.
+
+## Cas pratique
+Le périmètre étudié est celui de la PHASE 1 AURA. Il se compose des réseaux suivants : RPAI Isère, AURORE Isère, AURORE Rhône, RSPA Puy de Dôme. 4 tables d'entrées sont saisies. 
+Les scenarios ont été réalisés en utilisant les hypoothèses suivantes : 
+* informées : 25%, 30%, 35%
+* incluses : 10%, 15%, 20% 
+* mois : sur une période d'un an (12 mois)

@@ -5,7 +5,7 @@
 
 # La fonction creer scenario créee des scenario du nombre de femmes à inclure à partir de variables d'entrée. 
 # la fonction prend pour argument une table d'entrée avec le noms des maternités et le nb d'accouchement, deux veecteurs de % pour les femmes informés et incluses, la variable mois. 
-# La sortie est une liste projection pour les scenario
+# La sortie est une liste
 
 creer_scenario<- function(table, var_inf, var_inc, mois) {
   
@@ -59,7 +59,7 @@ lancer_scenario<-function(table_entree){
 
 #2. ANNUALISER LA PROJECTION ------
 # La fonction annualiser scenario agrege les données de la table scenario d'un réseau pour donner par mateernités du nombre annuel d'accouchement, d'informees, d'incluses
-# la fonction prend pour arguments une table scenario, la liste des maternites et les prefixes (à savoir les maternités en abrégées permeettant d'identifier les colonnes à utiliser pour les sommes)
+# la fonction prend pour arguments une table scenario, la liste des maternites et les prefixes (à savoir les maternités en abrégées permettant d'identifier les colonnes à utiliser pour les sommes)
 # La sortie est une liste de scenario avec des totaux annualisés
 annualiser_scenario<-function(table_scenario, maternites, prefixes){
 scenario_annuel<- list()

@@ -10,7 +10,7 @@ library(writexl) # exporter fichier excel
 library(tidyr) # organiser un dataframe
 library(stringr) # travailler le texte
 library(xlsx) # exporter datagrame dans excel
-library(leaflet) # affichage de la carto
+library(leaflet) # affichage de la carte
 library(tidygeocoder) # fonction geocode, récuperer les coordonnées géo
 library(htmlwidgets) #sauveegarder en html
 library(sf) # charger fond de carte
@@ -62,12 +62,17 @@ nrow(SagefemmeGyne_isere)
 ### Step 2 : cleaning des adresses
 # appliquer la fonction correction adresses isère à toutes les colonnes étant des charactères. Attention à appliquer après correction table et nettoyage ecriture
 SagefemmeGyne_isere<-mutate(SagefemmeGyne_isere, adresse=corriger_adresse_isere(adresse))
-# appliquer la fonction creation structure clean isere à la table complète 
+# appliquer la fonction creation structure clean isere à la table complète et appliquer la fonction compléter type
 SagefemmeGyne_isere<-creer_structure_clean_isere(SagefemmeGyne_isere)
+SagefemmeGyne_isere<-completer_type(SagefemmeGyne_isere)
 ### Step 3 : groupement des adresses
 SfGoAdresse_isere<-grouper_prof(SagefemmeGyne_isere)
 print(SfGoAdresse_isere)
 write_xlsx(SfGoAdresse_isere,"Resultats/sfgyne_isere_gpt.xlsx")
+# combien de cabinets au total
+#SfGoAdresse_isere_total<-grouper_prof_total(SagefemmeGyne_isere)
+#SfGoAdresse_isere_total_rpai<-filter(SfGoAdresse_isere_total, reseau=="rpai")
+#nrow(SfGoAdresse_isere_total_rpai)
 
 ##3.2. RHONE ----
 ### Step 1: sélection du département Rhone
@@ -76,13 +81,15 @@ nrow(SagefemmeGyne_rhone)
 ### Step 2 : cleaning des adresses
 # appliquer la fonction correction adresses isère à toutes les colonnes étant des charactères. Attention à appliquer après correction table et nettoyage ecriture
 SagefemmeGyne_rhone<-mutate(SagefemmeGyne_rhone, adresse=corriger_adresse_rhone(adresse))
-# appliquer la fonction creation structure clean isere à la table complète 
+# appliquer la fonction creation structure clean isere à la table complète et appliquer la fonction compléter type
 SagefemmeGyne_rhone<-creer_structure_clean_rhone(SagefemmeGyne_rhone)
+SagefemmeGyne_rhone<-completer_type(SagefemmeGyne_rhone)
 ### Step 3 : groupement des adresses
 SfGoAdresse_rhone<-grouper_prof(SagefemmeGyne_rhone)
 print(SfGoAdresse_rhone)
 write_xlsx(SfGoAdresse_rhone,"Resultats/sfgyne_rhone_gpt.xlsx")
-
+# combien de cabinets au total
+#SfGoAdresse_rhone_total<-grouper_prof_total(SagefemmeGyne_rhone)
 
 ##3.3. PUY DE DOME ----
 ### Step 1: sélection du département Rhone
@@ -92,13 +99,20 @@ nrow(SagefemmeGyne_dome)
 ### Step 2 : cleaning des adresses
 # appliquer la fonction correction adresses isère à toutes les colonnes étant des charactères. Attention à appliquer après correction table et nettoyage ecriture
 SagefemmeGyne_dome<-mutate(SagefemmeGyne_dome, adresse=corriger_adresse_dome(adresse))
-# appliquer la fonction creation structure clean isere à la table complète 
+# appliquer la fonction creation structure clean isere à la table complète et appliquer la fonction compléter type
 SagefemmeGyne_dome<-creer_structure_clean_dome(SagefemmeGyne_dome)
+SagefemmeGyne_dome<-completer_type(SagefemmeGyne_dome)
+
 ### Step 3 : groupement des adresses
 SfGoAdresse_dome<-grouper_prof(SagefemmeGyne_dome)
 print(SfGoAdresse_dome)
-#write_xlsx(SfGoAdresse_rhone,"Resultats/sfgyne_gpt.xlsx")
-
+write_xlsx(SfGoAdresse_dome,"Resultats/sfgyne_dome_gpt.xlsx")
+# combien de cabinets au total
+#SfGoAdresse_dome_total<-grouper_prof_total(SagefemmeGyne_dome)
+# groupement avec n>2
+SfGoAdresse_dome_3<-grouper_prof_3(SagefemmeGyne_dome)
+print(SfGoAdresse_dome_3)
+write_xlsx(SfGoAdresse_dome_3,"Resultats/sfgyne_dome_gpt3.xlsx")
 
 #4. MAP-----
 
@@ -108,4 +122,5 @@ saveWidget(map_isere, file = "Resultats/carto_isere.html", selfcontained = TRUE)
 map_rhone<-projeter_adresses(SagefemmeGyne_rhone,SfGoAdresse_rhone,"rhone")
 saveWidget(map_rhone, file = "Resultats/carto_rhone.html", selfcontained = TRUE)
 
-#map_dome<-projeter_adresses(SagefemmeGyne_dome,SfGoAdresse_dome,"dome")
+map_dome<-projeter_adresses(SagefemmeGyne_dome,SfGoAdresse_dome_3,"dome")
+saveWidget(map_dome, file = "Resultats/carto_dome.html", selfcontained = TRUE)
